@@ -112,9 +112,151 @@ summary.stay {
 @media (min-width: 769px) {
   table, th, td { font-size: 1em; }
 }
+
+/* Collapsible cards: hide source table when JS has converted it */
+.table-wrap.js-collapsed { display: none; }
+
+/* Make the summary header look like the existing .card row */
+details summary .card { display: inline-block; padding: 0.4em 0; }
+details { margin-bottom: 1.0em; }
+
+
+:root{
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --ink: #0f172a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --shadow: 0 6px 18px rgba(0,0,0,.06);
+  --accent: #2563eb;        /* default accent (blue-600) */
+  --accent-soft: #eef2ff;   /* default soft tint */
+}
+
+html, body{ background: var(--bg); color: var(--ink); }
+
+/* Toolbar */
+.toolbar{
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(#fff, #fafafa);
+  border-bottom: 1px solid var(--border);
+  margin: -8px -8px 16px; padding: 8px 8px 0;
+}
+.toolbar-inner{
+  max-width: 1280px; margin: 0 auto; padding: 8px 8px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.toolbar-title{ font-weight: 800; letter-spacing:.2px; }
+.toolbar-actions button{
+  border: 1px solid var(--border);
+  background: #fff; padding: 8px 12px; border-radius: 10px;
+  cursor: pointer; font-weight: 600;
+}
+.toolbar-actions button:hover{ background: #f8fafc; }
+
+/* Cards container */
+#cards{ max-width: 1280px; margin: 0 auto; padding: 12px 8px 28px; }
+
+/* details as cards */
+details{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+details + details{ margin-top: 16px; }
+
+/* Summary header */
+details > summary{
+  list-style: none;
+  position: relative;
+  padding: 16px 18px 14px 46px;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  font-weight: 700;
+}
+/* Chevron */
+details > summary::before{
+  content: "";
+  width: 10px; height: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  position: absolute; left: 18px; top: 22px;
+  transition: transform .2s ease, border-color .2s ease;
+}
+details[open] > summary::before{ transform: rotate(45deg); border-color: var(--accent); }
+
+/* When open, give subtle tinted header */
+details[open] > summary{ background: var(--accent-soft); border-bottom: 1px solid var(--border); }
+
+/* Title row taken from first cell (.card) */
+details > summary .card{ display: inline-flex; align-items:center; gap: 10px; font-size: 1.05rem; }
+.badge{
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-weight: 700; font-size: .78rem;
+  background: #f1f5f9; color: #0f172a;
+  border: 1px solid var(--border);
+}
+
+/* Accent colours per card type (class copied from tr) */
+details.tmoney{ --accent:#16a34a; --accent-soft:#ecfdf5; }    /* green */
+details.wowpass{ --accent:#0891b2; --accent-soft:#e0f2fe; }   /* cyan */
+details.climate{ --accent:#f59e0b; --accent-soft:#fff7ed; }   /* amber */
+details.discover{ --accent:#7c3aed; --accent-soft:#f5f3ff; }  /* violet */
+
+/* Body area */
+.card-body{ padding: 14px 18px 18px; background: var(--card); }
+
+/* Key/Value table */
+.card-body table{ width:100%; border-collapse: collapse; }
+.card-body th{
+  text-align: left; font-weight:700; color:#475569;
+  width: 28%; padding: 10px 10px; background: #f8fafc;
+  border-bottom:1px solid var(--border); vertical-align:top;
+}
+.card-body td{
+  padding: 10px 10px; vertical-align: top; border-bottom:1px solid var(--border);
+}
+.card-body tr:last-child th, .card-body tr:last-child td{ border-bottom: none; }
+
+/* Lists */
+.card-body ul{ margin: 6px 0 6px 18px; }
+.card-body li{ margin: 4px 0; }
+
+/* Muted text & price */
+.muted{ color: var(--muted); }
+.price{ font-variant-numeric: tabular-nums; }
+
+/* Hide source table after conversion */
+.table-wrap.js-collapsed{ display:none; }
+
+/* Mobile */
+@media (max-width: 720px){
+  details > summary{ padding: 14px 14px 12px 42px; }
+  .card-body th{ width: 38%; }
+  .toolbar-inner{ flex-wrap: wrap; gap: 6px 8px; }
+}
+
 </style>
 </head>
 <body><h1>Seoul & Korea IC / Travel Cards</h1>
+
+  
+
+<div id="toolbar" class="toolbar" role="region" aria-label="Card controls">
+  <div class="toolbar-inner">
+    <span class="toolbar-title">Seoul & Korea IC / Travel Cards</span>
+    <div class="toolbar-actions">
+      <button id="expandAll" type="button" aria-label="Expand all cards">Expand all</button>
+      <button id="collapseAll" type="button" aria-label="Collapse all cards">Collapse all</button>
+    </div>
+  </div>
+</div>
+
+<div id="cards" aria-live="polite"></div>
+
 
   <div class="table-wrap">
     <table aria-label="Korea IC card options">
@@ -226,10 +368,6 @@ summary.stay {
     </table>
   </div>
 
-  <div class="author-link">
-    <p>✨ Created by <a href="https://www.youtube.com/watch?v=pr5GhmXqei0" target="_blank">the author</a></p>
-  </div>
-
 <script>
   // Enhanced SW registration + update flow
   if ('serviceWorker' in navigator) {
@@ -263,5 +401,88 @@ summary.stay {
       alert('You are offline. Reconnect to get live updates. The app refreshes itself once you’re back online.');
     }
   });
-</script></body>
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const table = document.querySelector('.table-wrap table');
+  const wrap  = document.querySelector('.table-wrap');
+  const cards = document.getElementById('cards');
+  if (!table || !cards) return;
+
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+  rows.forEach((tr) => {
+    const tds = Array.from(tr.querySelectorAll('td'));
+    if (tds.length !== headers.length) return;
+
+    const details = document.createElement('details');
+    details.className = tr.className || '';
+
+    // Summary uses the original "Card Name" cell (index 0) content
+    const summary = document.createElement('summary');
+    summary.innerHTML = tds[0].innerHTML;
+    details.appendChild(summary);
+
+    // Body: a tidy key/value table for the remaining columns
+    const inner = document.createElement('div');
+    inner.setAttribute('class', 'card-body');
+    const kv = document.createElement('table');
+    kv.setAttribute('aria-label', (summary.textContent || 'Card') + ' details');
+    kv.style.width = '100%';
+    kv.style.borderCollapse = 'collapse';
+    const tbody = document.createElement('tbody');
+
+    for (let i = 1; i < tds.length; i++) {
+      const tr2 = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = headers[i];
+      th.style.textAlign = 'left';
+      th.style.verticalAlign = 'top';
+      th.style.padding = '0.4em 0.6em';
+      th.style.width = '28%';
+      const td = document.createElement('td');
+      td.innerHTML = tds[i].innerHTML;
+      td.style.padding = '0.4em 0.6em';
+      td.style.verticalAlign = 'top';
+      tr2.appendChild(th);
+      tr2.appendChild(td);
+      tbody.appendChild(tr2);
+    }
+    kv.appendChild(tbody);
+    inner.appendChild(kv);
+    details.appendChild(inner);
+
+    // Ensure collapsed by default on every load / refresh
+    details.open = false;
+
+    cards.appendChild(details);
+  });
+
+  // Hide the original table once conversion completes
+  wrap.classList.add('js-collapsed');
+});
+</script>
+
+
+<script>
+  (function(){
+    const onReady = (fn) => (document.readyState !== 'loading') ? fn() : document.addEventListener('DOMContentLoaded', fn);
+    onReady(() => {
+      const expandBtn = document.getElementById('expandAll');
+      const collapseBtn = document.getElementById('collapseAll');
+      const root = document.getElementById('cards');
+
+      function setAll(open){
+        const all = root ? root.querySelectorAll('details') : [];
+        all.forEach(d => d.open = !!open);
+      }
+      if (expandBtn) expandBtn.addEventListener('click', () => setAll(true));
+      if (collapseBtn) collapseBtn.addEventListener('click', () => setAll(false));
+    });
+  })();
+</script>
+
+</body>
 </html>
